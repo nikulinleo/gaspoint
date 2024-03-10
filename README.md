@@ -1,18 +1,1 @@
-## Getting Started
-
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
-
-## Folder Structure
-
-The workspace contains two folders by default, where:
-
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
-
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
-
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
-
-## Dependency Management
-
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+ Смоделировать работу АЗС. На заправку будут подъезжать автомобили, у каждого автомобиля свой объем бака, %его заполненности и желание заполнить бак на сколько-то литров(нельзя налить больше, чем свободное место в баке). На заправке будет некоторое количество колонок, если есть свободная колонка, то машина поедет туда. Если все заняты, то формируется очередь из автомобилей, если время ождания автомобиля становится более 12 минут, то через два дня открывают дополнительную колонку.  Будет здорово сделать изменяющуюся нагрузку в разное время дня. Нужно сделать так чтобы машины появлялись случайным образом в конкретный момент времени с некоторой вероятностью. Стоит учесть, что количество бензина на заправке ограничено и его привозят только раз в какое-то время.  Пусть скорость заполнения бака будет 20 литров в минуту и она может регулироваться для каждой колонки.
