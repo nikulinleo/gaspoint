@@ -4,13 +4,18 @@ import java.util.TimerTask;
 import java.util.Random;
 
 public class Main {
-    public static final int timescale = 100;
+    public static final int timescale = 1;
+
+    public static final int[] temporalprobability = {   1, 1, 1, 1, 1, 2, 
+                                                        8, 20, 10, 2, 1, 1,
+                                                        1, 1, 1, 1, 1, 2, 
+                                                        4, 8, 10, 9, 7, 5}; 
 
     public static void main(String[] args) {
 
         Timer CarGenerator = new Timer();
-        GasColumn a = new GasColumn(10), b = new GasColumn(20), c = new GasColumn(30);
-        GasStation station = new GasStation(a, b, c);
+        GasColumn a = new GasColumn(10), b = new GasColumn(10);
+        GasStation station = new GasStation(a, b);
         
         CarGenerator.scheduleAtFixedRate(new CarTask(station), 0, timescale); //Timescale is timescale ms in real for 1min in simulation
     }
@@ -27,7 +32,7 @@ class Car{
         this.tank = tank;
         this.fullness = fullness;
         this.request = request;
-        if(this.request > this.tank*(this.fullness - 1)) throw new RuntimeException("Incorrect requested volume");
+        if(this.request <= this.tank*(this.fullness - 1)) throw new RuntimeException("Incorrect requested volume");
     }
 
     public Car(){
@@ -143,7 +148,7 @@ class ColumnTask extends TimerTask{
         if(station.queueSize() > 0){
             System.out.println("\t\tTake next from queue, queue size: " + station.Queue.size());
             Car next = station.getNext();
-            next.waitTask.cancel();
+            if (next.waitTask != null) next.waitTask.cancel();
             int time = (int) (next.getRequest() * Main.timescale / column.getPerformance());
             timer.schedule(new ColumnTask(station, column), time);
         }
@@ -156,17 +161,22 @@ class ColumnTask extends TimerTask{
 class WaitLimitTask extends TimerTask{
     private GasStation station;
     private Timer timer;
+    private Car car;
 
-    WaitLimitTask(GasStation station){
+    WaitLimitTask(GasStation station, Car car){
         this.station = station;
         this.timer = station.timer;
+        this.car = car;
     }
 
     @Override
     public void run() {
-        System.out.println("Wait limit exceeded, building new column");
-        timer.schedule(new ColumnBuildTask(station), 24*2*60*Main.timescale);
-        station.buildingInProcess = true;
+        car.waitTask = null;
+        if(!station.buildingInProcess){
+            System.out.println("Wait limit exceeded, building new column");
+            timer.schedule(new ColumnBuildTask(station), 24*2*60*Main.timescale);
+            station.buildingInProcess = true;
+        }
     }
 }
 
@@ -187,7 +197,7 @@ class ColumnBuildTask extends TimerTask{
         if(station.queueSize() > 0){
             System.out.println("\t\tTake next from queue, queue size: " + station.queueSize());
             Car next = station.getNext();
-            next.waitTask.cancel();
+            if (next.waitTask != null) next.waitTask.cancel();
             GasColumn column = station.allocCol();
             int time = (int) (next.getRequest() * Main.timescale / column.getPerformance());
             timer.schedule(new ColumnTask(station, column), time);
@@ -209,10 +219,10 @@ class CarTask extends TimerTask{
 
     @Override
     public void run() {
-        time = time % (24 * 60) + 1;
-        System.out.println((int) time / 60 + ":" + time % 60);
-        if(gen.nextInt(100) > 70){
+        time = (time + 1) % (24 * 60) ;
+        if(gen.nextInt(40) <= Main.temporalprobability[(int) time/60]){
             Car newCar = new Car();
+            System.out.println((int) time / 60 + ":" + time % 60);
             System.out.println("\t\tNew car arrived, requested " + newCar.getRequest() + " liters");
             if(station.isFree()){
                 System.out.println("\t\tFree column found");
@@ -221,11 +231,9 @@ class CarTask extends TimerTask{
             }
             else{
                 System.out.println("\t\tNo free column, pushed to queue");
-                if(!station.buildingInProcess){
-                    WaitLimitTask t = new WaitLimitTask(station);
-                    newCar.waitTask = t;
-                    timer.schedule(t, 12 * Main.timescale);
-                }
+                WaitLimitTask t = new WaitLimitTask(station, newCar);
+                newCar.waitTask = t;
+                timer.schedule(t, 12 * Main.timescale);
                 station.addQueue(newCar);
             }
         }
